@@ -18,7 +18,7 @@
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# ARE DISCLAIMED. IN NO Enp.asarray(a)VENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
 # LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
 # CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
 # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import rospy
-
+import numpy as np
 from baxter_pykdl import baxter_kinematics
 
 
@@ -69,6 +69,14 @@ def main():
     # Cartesian space mass matrix
     print '\n*** Baxter Cartesian Inertia ***\n'
     print kin.cart_inertia()
+
+    for i in range(10):
+        print i
+        J = kin.jacobian_pseudo_inverse()
+        A = np.matrix(J)
+	twist = np.array([[.1],[0],[0],[0],[0],[0]])
+        print A*twist
+
 
 if __name__ == "__main__":
     main()
