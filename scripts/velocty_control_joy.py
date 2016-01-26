@@ -37,6 +37,7 @@ from std_msgs.msg import (
     UInt16,
 )
 
+from sensor_msgs.msg import Joy
 import baxter_interface
 from baxter_interface import CHECK_VERSION
 
@@ -47,24 +48,69 @@ class Wobbler(object):
         """
         'Wobbles' both arms by commanding joint velocities sinusoidally.
         """
-        self._pub_rate = rospy.Publisher('robot/joint_state_publish_rate',
+        self._pub_rate          = rospy.Publisher('robot/joint_state_publish_rate',
                                          UInt16, queue_size=10)
-        self._left_arm = baxter_interface.limb.Limb("left")
-        self._right_arm = baxter_interface.limb.Limb("right")
-        self._left_joint_names = self._left_arm.joint_names()
+        self._left_arm          = baxter_interface.limb.Limb("left")
+        self._right_arm         = baxter_interface.limb.Limb("right")
+        self._left_joint_names  = self._left_arm.joint_names()
         self._right_joint_names = self._right_arm.joint_names()
-        self.q_dot =[.0,.0,.0,.0,.0,.0,.0]
+        self._left_grip = baxter_interface.Gripper('left', CHECK_VERSION)
+        self._right_grip = baxter_interface.Gripper('right', CHECK_VERSION)
+        # calibrate
+        self._left_grip.calibrate()
+        self._right_grip.calibrate()
+        # self._left_grip_state   = 'open'
+        # self._right_grip_state  = 'open'
         # control parameters
-        self._rate = 500.0  # Hz
-
+        self._rate              = 500.0  # Hz
+        self._max_speed         = .05
+        self._arm               = 'none'
         print("Getting robot state... ")
         self._rs = baxter_interface.RobotEnable(CHECK_VERSION)
         self._init_state = self._rs.state().enabled
         print("Enabling robot... ")
         self._rs.enable()
-
         # set joint state publishing to 500Hz
         self._pub_rate.publish(self._rate)
+        rospy.Subscriber("joy", Joy, self._joystick_read)
+        # Dynamics
+        self.q_dot              = [.0,.0,.0,.0,.0,.0,.0]
+        self.twist              = np.array([[.0],[.0],[.0],[.0],[.0],[.0]])
+        print '*** Baxter PyKDL Kinematics ***\n'
+        self.kin = {}
+        self.kin['left'] = baxter_kinematics('left')
+        self.kin['right'] = baxter_kinematics('right')
+
+
+    def _joystick_read(self,data):
+        # which arm to control
+        if data.buttons[4]:     self._arm = 'left'
+        if data.buttons[5]:     self._arm = 'right'
+        # grippers
+        if data.buttons[0]:
+            if self._arm == 'left' : self._left_grip.close()
+            if self._arm == 'right': self._right_grip.close()
+        if data.buttons[1]:
+            if self._arm == 'left' : self._left_grip.open()
+            if self._arm == 'right': self._right_grip.open()
+        # x_axis speed
+        self.twist[0][0] = data.axes[1]*self._max_speed
+        # y_axis speed
+        self.twist[1][0] = data.axes[0]*self._max_speed
+        # z_axis speed
+        self.twist[2][0] = ((data.axes[2]-1)-(data.axes[5]-1))*self._max_speed/2.0
+        # rot x_axis speed
+        self.twist[3][0] = -data.axes[3]*self._max_speed
+        # rot y_axis speed
+        self.twist[4][0] = data.axes[4]*self._max_speed
+
+        if self._arm in self.kin:
+            J = np.matrix(self.kin[self._arm].jacobian_pseudo_inverse())
+            # A = np.matrix(J)
+            q_dot = J*self.twist
+            self.q_dot = [i[0] for i in q_dot.tolist()]
+
+        print data.buttons
 
     def _reset_control_modes(self):
         rate = rospy.Rate(self._rate)
@@ -107,65 +153,38 @@ class Wobbler(object):
             return dict([(joint, q_dot[i])
                          for i, joint in enumerate(joint_names)])
 
-        for i in range(3):
+        while not rospy.is_shutdown():
             self._pub_rate.publish(self._rate)
             elapsed = rospy.Time.now() - start
-            cmd = make_cmd(self._left_joint_names, self.q_dot)
-            self._left_arm.set_joint_velocities(cmd)
-            # cmd = make_cmd(self._right_joint_names, elapsed)
-            # self._right_arm.set_joint_velocities(cmd)
+            if self._arm == 'left':
+                cmd = make_cmd(self._left_joint_names, self.q_dot)
+                self._left_arm.set_joint_velocities(cmd)
+            elif self._arm == 'right':
+                cmd = make_cmd(self._right_joint_names, self.q_dot)
+                self._right_arm.set_joint_velocities(cmd)
             rate.sleep()
 
 def main():
     rospy.init_node('baxter_velocity_control')
-    print '*** Baxter PyKDL Kinematics ***\n'
-    kin = baxter_kinematics('left')
 
-    print '\n*** Baxter Description ***\n'
-    kin.print_robot_description()
-    print '\n*** Baxter KDL Chain ***\n'
-    kin.print_kdl_chain()
     # # FK Position
     # print '\n*** Baxter Position FK ***\n'
     # print kin.forward_position_kinematics()
-    # # FK Velocity
-    # # print '\n*** Baxter Velocity FK ***\n'
-    # # kin.forward_velocity_kinematics()
-    # # IK
-    # print '\n*** Baxter Position IK ***\n'
-    # pos = [0.582583, -0.180819, 0.216003]
-    # rot = [0.03085, 0.9945, 0.0561, 0.0829]
-    # print kin.inverse_kinematics(pos)  # position, don't care orientation
-    # print '\n*** Baxter Pose IK ***\n'
-    # print kin.inverse_kinematics(pos, rot)  # position & orientation
-    # # Jacobian
-    # print '\n*** Baxter Jacobian ***\n'
-    # print kin.jacobian()
-    # # Jacobian Transpose
-    # print '\n*** Baxter Jacobian Tranpose***\n'
-    # print kin.jacobian_transpose()
-    # # Jacobian Pseudo-Inverse (Moore-Penrose)
-    # print '\n*** Baxter Jacobian Pseudo-Inverse (Moore-Penrose)***\n'
-    # print kin.jacobian_pseudo_inverse()
-    # # Joint space mass matrix
-    # print '\n*** Baxter Joint Inertia ***\n'
-    # print kin.inertia()
-    # # Cartesian space mass matrix
-    # print '\n*** Baxter Cartesian Inertia ***\n'
-    # print kin.cart_inertia()
+
 
     wobbler = Wobbler()
 
-    for i in range(300):
-        print i
-        J = kin.jacobian_pseudo_inverse()
-        A = np.matrix(J)
-        twist = np.array([[.0],[.0],[.0],[.0],[.0],[.0]])
-        q_dot = A*twist
-        q_dot_list = [i[0] for i in q_dot.tolist()]
-        print q_dot_list
-        wobbler.q_dot = q_dot_list
-        wobbler.wobble()
+
+    # for i in range(300):
+    #     print i
+    #     J = kin.jacobian_pseudo_inverse()
+    #     A = np.matrix(J)
+    #     twist = np.array([[.0],[.0],[.0],[.0],[.0],[.0]])
+    #     q_dot = A*twist
+    #     q_dot_list = [i[0] for i in q_dot.tolist()]
+    #     # print q_dot_list
+    #     wobbler.q_dot = q_dot_list
+    #     wobbler.wobble()
 
     wobbler.q_dot = [.0,.0,.0,.0,.0,.0,.0]
     wobbler.wobble()
