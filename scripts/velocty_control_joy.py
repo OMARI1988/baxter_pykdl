@@ -37,10 +37,26 @@ from std_msgs.msg import (
     UInt16,
 )
 
-from sensor_msgs.msg import Joy
+from sensor_msgs.msg import Joy,Image
 import baxter_interface
 from baxter_interface import CHECK_VERSION
+import cv2
+from cv_bridge import CvBridge
 
+
+class Camera():
+
+    def __init__(self):
+        rospy.Subscriber("/cameras/right_hand_camera/image", Image, self._right_camera)
+        self._br = CvBridge()	# Create a black image, a window
+        self.count = 0
+
+    def _right_camera(self,imgmsg):
+        img = self._br.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
+        print img.shape
+    	cv2.imshow('right',img)
+    	k = cv2.waitKey(1) & 0xff
+        cv2.imwrite('/home/omari/Datasets/test/image_'+str(self.count))
 
 class Wobbler(object):
 
@@ -171,7 +187,7 @@ def main():
     # print '\n*** Baxter Position FK ***\n'
     # print kin.forward_position_kinematics()
 
-
+    # camera = Camera()
     wobbler = Wobbler()
 
 
@@ -188,7 +204,7 @@ def main():
 
     wobbler.q_dot = [.0,.0,.0,.0,.0,.0,.0]
     wobbler.wobble()
-
+    # rospy.spin()
     rospy.on_shutdown(wobbler.clean_shutdown)
 
     print("Done.")
