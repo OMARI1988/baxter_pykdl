@@ -102,6 +102,7 @@ class Wobbler(object):
         # which arm to control
         if data.buttons[4]:     self._arm = 'left'
         if data.buttons[5]:     self._arm = 'right'
+        print 'buttons',data.buttons
         # grippers
         if data.buttons[0]:
             if self._arm == 'left' : self._left_grip.close()
@@ -110,23 +111,24 @@ class Wobbler(object):
             if self._arm == 'left' : self._left_grip.open()
             if self._arm == 'right': self._right_grip.open()
         # x_axis speed
-        self.twist[0][0] = data.axes[1]*self._max_speed
+        self.twist[0][0] = data.axes[1]*self._max_speed + data.axes[7]*self._max_speed*.9
         # y_axis speed
-        self.twist[1][0] = data.axes[0]*self._max_speed
+        self.twist[1][0] = data.axes[0]*self._max_speed + data.axes[6]*self._max_speed
         # z_axis speed
         self.twist[2][0] = ((data.axes[2]-1)-(data.axes[5]-1))*self._max_speed/2.0
-        # rot x_axis speed
-        self.twist[3][0] = -data.axes[3]*self._max_speed
-        # rot y_axis speed
-        self.twist[4][0] = data.axes[4]*self._max_speed
+        # # rot x_axis speed
+        # self.twist[3][0] = -data.axes[3]*self._max_speed
+        # # rot y_axis speed
+        # self.twist[4][0] = data.axes[4]*self._max_speed
 
         if self._arm in self.kin:
             J = np.matrix(self.kin[self._arm].jacobian_pseudo_inverse())
             # A = np.matrix(J)
             q_dot = J*self.twist
             self.q_dot = [i[0] for i in q_dot.tolist()]
-
-        print data.buttons
+            self.q_dot[-1] += data.buttons[2]*.5 - data.buttons[3]*.5
+            self.q_dot[-2] += data.axes[4]*.5
+            self.q_dot[-3] -= data.axes[3]*.5
 
     def _reset_control_modes(self):
         rate = rospy.Rate(self._rate)

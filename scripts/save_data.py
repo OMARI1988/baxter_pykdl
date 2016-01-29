@@ -32,6 +32,7 @@ import numpy as np
 from baxter_pykdl import baxter_kinematics
 import random
 import math
+import pcl
 
 from std_msgs.msg import (
     UInt16,
