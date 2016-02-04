@@ -16,7 +16,8 @@ rpy_calib = [2313, 3585, 2689]      # the values you should use
 
 if __name__ == '__main__':
     rospy.init_node('my_tf_broadcaster')
-    br = tf.TransformBroadcaster()
+    br1 = tf.TransformBroadcaster()
+    br2 = tf.TransformBroadcaster()
     rate = rospy.Rate(100.0)
     # #
     # def nothing(x):
@@ -57,10 +58,15 @@ if __name__ == '__main__':
         #                  rospy.Time.now(),
         #                  "kinect2_rgb_optical_frame",
         #                  "torso")
-
-        br.sendTransform((xyz_calib[0], xyz_calib[1], xyz_calib[2]),
+        br1.sendTransform((xyz_calib[0], xyz_calib[1], xyz_calib[2]),
                          (q_calib[0],  q_calib[1],  q_calib[2],  q_calib[3]),
                          rospy.Time.now(),
-                         "kinect2_rgb_optical_frame",
+                         "kinect2_1_rgb_optical_frame",
+                         "torso")
+
+        br2.sendTransform((xyz_calib[0], xyz_calib[1], xyz_calib[2]),
+                         (q_calib[0],  q_calib[1],  q_calib[2],  q_calib[3]),
+                         rospy.Time.now(),
+                         "kinect2_2_rgb_optical_frame",
                          "torso")
         rate.sleep()
