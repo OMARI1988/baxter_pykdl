@@ -99,6 +99,9 @@ class Wobbler(object):
 
 
     def _joystick_read(self,data):
+        # reset arm positions
+        if data.buttons[6]:
+            self.set_neutral()
         # which arm to control
         if data.buttons[4]:     self._arm = 'left'
         if data.buttons[5]:     self._arm = 'right'
@@ -141,13 +144,22 @@ class Wobbler(object):
             rate.sleep()
         return True
 
+    def make_cmd(self,joint_names, q_dot):
+        return dict([(joint, q_dot[i])
+                     for i, joint in enumerate(joint_names)])
+
     def set_neutral(self):
         """
         Sets both arms back into a neutral pose.
         """
-        print("Moving to neutral pose...")
-        self._left_arm.move_to_neutral()
-        self._right_arm.move_to_neutral()
+        print("Moving to original pose...")
+        # self._left_arm.move_to_neutral()
+        p = [-0.08, -1.0, -1.19, 1.94,  0.67, 1.03, -0.50]
+        cmd = self.make_cmd(self._left_joint_names, p)
+        self._left_arm.move_to_joint_positions(cmd,15,.03)
+        p = [0.08, -1.0,  1.19, 1.94, -0.67, 1.03,  0.50]
+        cmd = self.make_cmd(self._right_joint_names, p)
+        self._right_arm.move_to_joint_positions(cmd,15,.03)
 
     def clean_shutdown(self):
         print("\nExiting example...")
@@ -160,25 +172,22 @@ class Wobbler(object):
         return True
 
     def wobble(self):
-        # self.set_neutral()
+        self.set_neutral()
         """
         Performs the wobbling of both arms.
         """
         rate = rospy.Rate(self._rate)
         start = rospy.Time.now()
 
-        def make_cmd(joint_names, q_dot):
-            return dict([(joint, q_dot[i])
-                         for i, joint in enumerate(joint_names)])
 
         while not rospy.is_shutdown():
             self._pub_rate.publish(self._rate)
             elapsed = rospy.Time.now() - start
             if self._arm == 'left':
-                cmd = make_cmd(self._left_joint_names, self.q_dot)
+                cmd = self.make_cmd(self._left_joint_names, self.q_dot)
                 self._left_arm.set_joint_velocities(cmd)
             elif self._arm == 'right':
-                cmd = make_cmd(self._right_joint_names, self.q_dot)
+                cmd = self.make_cmd(self._right_joint_names, self.q_dot)
                 self._right_arm.set_joint_velocities(cmd)
             rate.sleep()
 

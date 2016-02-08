@@ -46,18 +46,18 @@ if __name__ == '__main__':
     cv2.createTrackbar('Yaw','image',0,3600,nothing)
 
     while not rospy.is_shutdown():
-        cv2.imshow('image',img)
-        k = cv2.waitKey(1) & 0xFF
-        print 'xyz:',xyz
-        print 'rpy:',rpy
-        print 'q:',q
-        print '------------------'
+        # cv2.imshow('image',img)
+        # k = cv2.waitKey(1) & 0xFF
+        # print 'xyz:',xyz
+        # print 'rpy:',rpy
+        # print 'q:',q
+        # print '------------------'
 
-        br2.sendTransform((xyz[0], xyz[1], xyz[2]),
-                         (q[0],  q[1],  q[2],  q[3]),
-                         rospy.Time.now(),
-                         "kinect2_2_rgb_optical_frame",
-                         "torso")
+        # br2.sendTransform((xyz[0], xyz[1], xyz[2]),
+        #                  (q[0],  q[1],  q[2],  q[3]),
+        #                  rospy.Time.now(),
+        #                  "kinect2_1_ir_optical_frame",
+        #                  "torso")
 
         br1.sendTransform((xyz_calib1[0], xyz_calib1[1], xyz_calib1[2]),
                          (q_calib1[0],  q_calib1[1],  q_calib1[2],  q_calib1[3]),
@@ -65,9 +65,9 @@ if __name__ == '__main__':
                          "kinect2_1_rgb_optical_frame",
                          "torso")
 
-        # br2.sendTransform((xyz_calib[0], xyz_calib[1], xyz_calib[2]),
-        #                  (q_calib[0],  q_calib[1],  q_calib[2],  q_calib[3]),
-        #                  rospy.Time.now(),
-        #                  "kinect2_2_rgb_optical_frame",
-        #                  "torso")
+        br2.sendTransform((xyz_calib1[0], xyz_calib1[1], xyz_calib1[2]),
+                         (q_calib1[0],  q_calib1[1],  q_calib1[2],  q_calib1[3]),
+                         rospy.Time.now(),
+                         "kinect2_1_ir_optical_frame",
+                         "torso")
         rate.sleep()
