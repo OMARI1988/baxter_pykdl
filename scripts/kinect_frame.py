@@ -7,12 +7,12 @@ import cv2
 
 global q,xyz,q_calib1,xyz_calib1,rpy
 xyz = [0.0, 0.0, 0.0]
-q = [0.0, 0.0, 0.0, 1.0]
+q1 = [0.0, 0.0, 0.0, 1.0]
 rpy = [0,0,0]
 
-xyz_calib1 = [0.29800000000000004, -0.07499999999999996, 0.2350000000000001]
-q_calib1 = [0.64694529, -0.63834098,  0.29837979, -0.2914654]
-rpy_calib = [2293, 3592, 2704]      # the values you should use
+xyz_calib1 = [0.272, -0.03600000000000003, 0.23399999999999999]
+q_calib1 = [-0.62690571,  0.63143915, -0.31687864,  0.32842314]
+rpy_calib = [2343, 10, 2701]      # the values you should use
 
 if __name__ == '__main__':
     rospy.init_node('my_tf_broadcaster')
@@ -50,20 +50,15 @@ if __name__ == '__main__':
         # k = cv2.waitKey(1) & 0xFF
         # print 'xyz:',xyz
         # print 'rpy:',rpy
-        # print 'q:',q
+        # print 'q:',q1
         # print '------------------'
-
+        #
         # br2.sendTransform((xyz[0], xyz[1], xyz[2]),
-        #                  (q[0],  q[1],  q[2],  q[3]),
+        #                  (q1[0],  q1[1],  q1[2],  q1[3]),
         #                  rospy.Time.now(),
         #                  "kinect2_1_ir_optical_frame",
         #                  "torso")
 
-        br1.sendTransform((xyz_calib1[0], xyz_calib1[1], xyz_calib1[2]),
-                         (q_calib1[0],  q_calib1[1],  q_calib1[2],  q_calib1[3]),
-                         rospy.Time.now(),
-                         "kinect2_1_rgb_optical_frame",
-                         "torso")
 
         br2.sendTransform((xyz_calib1[0], xyz_calib1[1], xyz_calib1[2]),
                          (q_calib1[0],  q_calib1[1],  q_calib1[2],  q_calib1[3]),

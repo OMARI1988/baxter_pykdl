@@ -152,6 +152,8 @@ class Wobbler(object):
         """
         Sets both arms back into a neutral pose.
         """
+        self._left_arm.set_joint_position_speed(.8)
+        self._right_arm.set_joint_position_speed(.8)
         print("Moving to original pose...")
         # self._left_arm.move_to_neutral()
         p = [-0.08, -1.0, -1.19, 1.94,  0.67, 1.03, -0.50]
