@@ -33,11 +33,9 @@ from baxter_pykdl import baxter_kinematics
 import random
 import math
 
-from std_msgs.msg import (
-    UInt16,
-)
-
+from std_msgs.msg import UInt16
 from sensor_msgs.msg import Joy,Image
+from baxter_pykdl.msg import joy_stick_commands
 import baxter_interface
 from baxter_interface import CHECK_VERSION
 import cv2
@@ -96,6 +94,7 @@ class Wobbler(object):
         self.kin = {}
         self.kin['left'] = baxter_kinematics('left')
         self.kin['right'] = baxter_kinematics('right')
+        self.pub_joy = rospy.Publisher('joy_commands', joy_stick_commands, queue_size=10)
 
 
     def _joystick_read(self,data):
@@ -132,6 +131,8 @@ class Wobbler(object):
             self.q_dot[-1] += data.buttons[2]*.5 - data.buttons[3]*.5
             self.q_dot[-2] += data.axes[4]*.5
             self.q_dot[-3] -= data.axes[3]*.5
+        T = [self.twist[0][0], self.twist[1][0], self.twist[2][0], 'not_used', 'not_used', 'not_used']
+        self.pub_joy.publish(str(data.buttons),str(data.axes),str(T),str(self.q_dot),self._arm)
 
     def _reset_control_modes(self):
         rate = rospy.Rate(self._rate)
