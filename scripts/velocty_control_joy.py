@@ -95,11 +95,20 @@ class Wobbler(object):
         self.kin['left'] = baxter_kinematics('left')
         self.kin['right'] = baxter_kinematics('right')
         self.pub_joy = rospy.Publisher('joy_commands', joy_stick_commands, queue_size=10)
+        self.pub_save = rospy.Publisher('save_commands', UInt16, queue_size=10)
 
 
     def _joystick_read(self,data):
+        # save data
+        if data.buttons[7]:     #start saving
+            self.pub_save.publish(1)
+        if data.buttons[8]:     #start saving
+            self.pub_save.publish(0)
+
+
         # reset arm positions
         if data.buttons[6]:
+            self._arm = ''
             self.set_neutral()
         # which arm to control
         if data.buttons[4]:     self._arm = 'left'
